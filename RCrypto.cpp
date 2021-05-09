@@ -55,21 +55,6 @@ class vigenereCipher : public crypto {
     }
     inline char char_process_ct(char ch) { return char_process(ch); }
     inline char char_process_pt(char ch) { return char_process(ch); }
-    /*     inline void _encrypt() {
-            int index = 0;
-            for (auto v : plaintext) {
-                if (_check(v))
-                    ciphertext.emplace_back(
-                        (v + key[index++ % key.size()] - base - base) % 26 + base);
-            }
-        }
-        inline void _decrypt() {
-            int index = 0;
-            for (auto v : ciphertext) {
-                if (_check(v))
-                    plaintext.emplace_back(v - key[index++ % key.size()] + base);
-            }
-        } */
     inline void _encrypt() { code(true); }
     inline void _decrypt() { code(false); }
     inline void code(bool mtd) {
