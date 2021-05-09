@@ -1,5 +1,5 @@
+#include <cctype>
 #include <vector>
-
 namespace RCrypto {
 
 class crypto {
@@ -11,24 +11,30 @@ class crypto {
         ciphertext.clear();
         plaintext.clear();
     }
-    virtual void _encrypt() = 0;
-    virtual void _decrypt() = 0;
+    inline virtual void _encrypt() = 0;
+    inline virtual void _decrypt() = 0;
+    inline virtual char char_process_key(char ch) { return ch; };
+    inline virtual char char_process_ct(char ch) { return ch; };
+    inline virtual char char_process_pt(char ch) { return ch; };
+    inline virtual char char_process(char ch) { return ch; };
 
   public:
     crypto() {}
     crypto(std::vector<char>& k) {
         for (char v : k)
-            key.emplace_back((v >= 'a' && v <= 'z') ? v - 'a' + 'A' : v);
+            key.emplace_back(char_process_key(v));
     }
     std::vector<char> encrypt(std::vector<char>& pt) {
         _clear();
-        plaintext = pt;
+        for (auto ch : pt)
+            plaintext.push_back(char_process_pt(ch));
         _encrypt();
         return ciphertext;
     }
     std::vector<char> decrypt(std::vector<char>& ct) {
         _clear();
-        ciphertext = ct;
+        for (auto ch : ct)
+            ciphertext.push_back(char_process_ct(ch));
         _decrypt();
         return plaintext;
     }
@@ -37,26 +43,46 @@ class crypto {
 class vigenereCipher : public crypto {
     const int base = 'A';
     inline bool _check(char& v) {
-        if (v <= 'z' && v >= 'a')
-            v -= 'a' - 'A';
         if (v <= 'Z' && v >= 'A')
             return true;
-        return false;
+        else
+            return false;
     }
-    inline void _encrypt() {
-        int index = 0;
-        for (auto v : plaintext) {
-            if (_check(v))
-                ciphertext.emplace_back(
-                    (v + key[index++ % key.size()] - base - base) % 26 + base);
-        }
+    inline char char_process(char ch) {
+        if (isalpha(ch) || ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r')
+            return ch;
+        exit(-1);
     }
-    inline void _decrypt() {
-        int index = 0;
-        for (auto v : ciphertext) {
-            if (_check(v))
-                plaintext.emplace_back(v - key[index++ % key.size()] + base);
+    inline char char_process_ct(char ch) { return char_process(ch); }
+    inline char char_process_pt(char ch) { return char_process(ch); }
+    /*     inline void _encrypt() {
+            int index = 0;
+            for (auto v : plaintext) {
+                if (_check(v))
+                    ciphertext.emplace_back(
+                        (v + key[index++ % key.size()] - base - base) % 26 + base);
+            }
         }
+        inline void _decrypt() {
+            int index = 0;
+            for (auto v : ciphertext) {
+                if (_check(v))
+                    plaintext.emplace_back(v - key[index++ % key.size()] + base);
+            }
+        } */
+    inline void _encrypt() { code(true); }
+    inline void _decrypt() { code(false); }
+    inline void code(bool mtd) {
+        std::vector<char> tmp;
+        auto len = (mtd ? plaintext : ciphertext).size();
+        for (int j = 0; j < len; j++) {
+            char tmp_ch =
+                mtd ? ((plaintext[j] - 'A' + key[j % key.size()] - 'A') % 26 + 'A')
+                    : ((ciphertext[j] - 'A' - key[j % key.size()] - 'A' + 260) % 26 +
+                       'A');
+            tmp.push_back(tmp_ch);
+        }
+        (!mtd ? plaintext : ciphertext) = tmp;
     }
 
   public:
@@ -66,7 +92,7 @@ class vigenereCipher : public crypto {
 class caesarCipher : public vigenereCipher {
   public:
     caesarCipher(std::vector<char>& k) {
-        if (k.size() < 1)
+        if (k.size() != 1)
             exit(-1);
         key.emplace_back((k[0] >= 'a' && k[0] <= 'z') ? k[0] - 'a' + 'A' : k[0]);
     }
